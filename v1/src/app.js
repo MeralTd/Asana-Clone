@@ -5,7 +5,7 @@ const loaders = require("./loaders")
 const events = require("./scripts/events")
 const path = require("path")
 
-const { ProjectRoute, UserRoute } = require("./api-routes");
+const { ProjectRoute, UserRoute, SectionRoute } = require("./api-routes");
 const fileUpload = require("express-fileupload");
 
 config();
@@ -21,6 +21,7 @@ app.use(fileUpload());
 app.listen(process.env.APP_PORT, () => {
     console.log("Sunucu ayağa kalktı..");
     app.use("/projects", ProjectRoute);
-    app.use("/users", UserRoute)
+    app.use("/users", UserRoute);
+    app.use("/sections", SectionRoute)
 
 })
