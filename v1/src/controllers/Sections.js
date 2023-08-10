@@ -1,5 +1,8 @@
-const { insert, list, modify, remove } = require("../services/Sections");
+// const { insert, list, modify, remove } = require("../services/Sections");
+const Service = require("../services/Sections");
 const httpStatus = require("http-status");
+
+const SectionService = new Service();
 
 const index = (req, res) => {
 
@@ -9,7 +12,7 @@ const index = (req, res) => {
     });
   }
 
-  list({ project_id: req.params.projectId})
+  SectionService.list({ project_id: req.params.projectId})
     .then((response) => {
       res.status(httpStatus.OK).send(response);
     })
@@ -20,7 +23,7 @@ const index = (req, res) => {
 
 const create = (req, res) => {
   req.body.user_id = req.user;
-  insert(req.body)
+  SectionService.create(req.body)
     .then((response) => {
       res.status(httpStatus.CREATED).send(response);
     })
@@ -35,7 +38,7 @@ const update = (req, res) => {
       message: "ID Bilgisi eksik",
     });
   }
-  modify(req.body, req.params?.id)
+  SectionService.update(req.params?.id, req.body)
     .then((updatedSection) => {
       res.status(httpStatus.OK).send(updatedSection);
     })
@@ -53,13 +56,13 @@ const deleteSection = (req, res) => {
     });
   }
 
-  remove(req.params?.id)
+  SectionService.delete(req.params?.id)
     .then((deletedSection) => {
       if(!deletedSection){
         return res.status(httpStatus.NOT_FOUND).send({error: "Böyle bir kayıt bulunmamaktadır."});
 
       }
-      res.status(httpStatus.OK).send({message: "Proje silinmiştir."});
+      res.status(httpStatus.OK).send({message: "Section silinmiştir."});
     })
     .catch((e) =>
       res.status(httpStatus.INTERNAL_SERVER_ERROR).send({

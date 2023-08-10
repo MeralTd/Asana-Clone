@@ -1,26 +1,21 @@
-const {
-  passwordToHash,
-  generateAccessToken,
-  generateRefreshToken,
-} = require("../scripts/utils/helper");
-const {
-  insert,
-  list,
-  loginUser,
-  modify,
-  remove,
-} = require("../services/Users");
-const projectsService = require("../services/Projects");
+// const { insert, list, loginUser, modify, remove } = require("../services/Users");
+
+const { passwordToHash, generateAccessToken, generateRefreshToken } = require("../scripts/utils/helper");
 const httpStatus = require("http-status");
 const uuid = require("uuid");
 const path = require("path");
-
 const eventEmitter = require("../scripts/events/eventEmitter");
+
+const ServiceProject = require("../services/Projects");
+const Service = require("../services/Users");
+const UserService = new Service();
+const ProjectService = new ServiceProject();
+
 
 const create = (req, res) => {
   req.body.password = passwordToHash(req.body.password);
 
-  insert(req.body)
+  UserService.create(req.body)
     .then((response) => {
       res.status(httpStatus.CREATED).send(response);
     })
@@ -31,17 +26,14 @@ const create = (req, res) => {
 
 const login = (req, res) => {
   req.body.password = passwordToHash(req.body.password);
-  loginUser(req.body)
+  UserService.findOne(req.body)
     .then((user) => {
       console.log(user);
-      if (!user)
-        return res
-          .status(httpStatus.NOT_FOUND)
-          .send({ message: "Böyle bir kullanıcı bulunmamaktadır." });
+      if (!user) return res.status(httpStatus.NOT_FOUND).send({ message: "Böyle bir kullanıcı bulunmamaktadır." });
 
       user = {
         ...user.toObject(),
-        token: {
+        tokens: {
           access_token: generateAccessToken(user),
           refresh_token: generateRefreshToken(user),
         },
@@ -53,7 +45,7 @@ const login = (req, res) => {
 };
 
 const index = (req, res) => {
-  list()
+  UserService.list()
     .then((response) => {
       res.status(httpStatus.OK).send(response);
     })
@@ -63,8 +55,7 @@ const index = (req, res) => {
 };
 
 const projectList = (req, res) => {
-  projectsService
-    .list({ user_id: req.user?._id })
+  ProjectService.list({ user_id: req.user?._id })
     .then((projects) => {
       res.status(httpStatus.OK).send(projects);
     })
@@ -76,14 +67,11 @@ const projectList = (req, res) => {
 };
 
 const resetPassword = (req, res) => {
-  const new_password =
-    uuid.v4()?.split("-")[0] || `usr-${new Date().getTime()}`;
-  modify({ email: req.body.email }, { password: passwordToHash(new_password) })
+  const new_password = uuid.v4()?.split("-")[0] || `usr-${new Date().getTime()}`;
+
+  UserService.updateWhere({ email: req.body.email }, { password: passwordToHash(new_password) })
     .then((updatedUser) => {
-      if (!updatedUser)
-        return res
-          .status(httpStatus.NOT_FOUND)
-          .send({ error: "Böyle bir kullanıcı bulunmamaktadır" });
+      if (!updatedUser) return res.status(httpStatus.NOT_FOUND).send({ error: "Böyle bir kullanıcı bulunmamaktadır" });
 
       eventEmitter.emit("send_email", {
         to: updatedUser.email, // list of receivers
@@ -95,15 +83,11 @@ const resetPassword = (req, res) => {
         message: "Yeni şifreniz eposta adresinize gönderildi.",
       });
     })
-    .catch(() =>
-      res
-        .status(httpStatus.INTERNAL_SERVER_ERROR)
-        .send({ error: "Şifre resetleme sırasında hata oluştu." })
-    );
+    .catch(() => res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: "Şifre resetleme sırasında hata oluştu." }));
 };
 
 const update = (req, res) => {
-  modify({ _id: req.user?._id }, req.body)
+  UserService.update(req.user?._id, req.body)
     .then((updatedUser) => {
       res.status(httpStatus.OK).send(updatedUser);
     })
@@ -116,7 +100,7 @@ const update = (req, res) => {
 
 const changePassword = (req, res) => {
   req.body.password = passwordToHash(req.body.password);
-  modify({ _id: req.user?._id }, req.body)
+  UserService.update(req.user?._id, req.body)
     .then((updatedUser) => {
       res.status(httpStatus.OK).send(updatedUser);
     })
@@ -134,12 +118,10 @@ const deleteUser = (req, res) => {
     });
   }
 
-  remove(req.params?.id)
+  UserService.delete(req.params?.id)
     .then((deletedUser) => {
       if (!deletedUser) {
-        return res
-          .status(httpStatus.NOT_FOUND)
-          .send({ error: "Böyle bir kullanıcı bulunmamaktadır." });
+        return res.status(httpStatus.NOT_FOUND).send({ error: "Böyle bir kullanıcı bulunmamaktadır." });
       }
       res.status(httpStatus.OK).send({ message: "Kullanıcı silinmiştir." });
     })
@@ -152,9 +134,7 @@ const deleteUser = (req, res) => {
 
 const updateProfileImage = (req, res) => {
   if (!req?.files?.profile_image) {
-    return res
-      .status(httpStatus.BAD_REQUEST)
-      .send({ error: "Bir hata oluştu." });
+    return res.status(httpStatus.BAD_REQUEST).send({ error: "Bir hata oluştu." });
   }
 
   const extension = path.extname(req.files.profile_image.name);
@@ -162,10 +142,9 @@ const updateProfileImage = (req, res) => {
   const folderPath = path.join(__dirname, "../", "uploads/users", fileName);
 
   req.files.profile_image.mv(folderPath, function (err) {
-    if (err)
-      return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err });
+    if (err) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: err });
 
-    modify({ _id: req.user._id }, { profile_image: fileName })
+    UserService.update(req.user._id, { profile_image: fileName })
       .then((updatedUser) => {
         res.status(httpStatus.OK).send(updatedUser);
       })

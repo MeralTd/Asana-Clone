@@ -1,8 +1,10 @@
-const { insert, list, modify, remove } = require("../services/Projects");
+// const { insert, list, modify, remove } = require("../services/Projects");
 const httpStatus = require("http-status");
+const Service = require("../services/Projects");
+const ProjectService = new Service();
 
 const index = (req, res) => {
-  list()
+  ProjectService.list()
     .then((response) => {
       res.status(httpStatus.OK).send(response);
     })
@@ -13,7 +15,7 @@ const index = (req, res) => {
 
 const create = (req, res) => {
   req.body.user_id = req.user;
-  insert(req.body)
+  ProjectService.create(req.body)
     .then((response) => {
       res.status(httpStatus.CREATED).send(response);
     })
@@ -28,7 +30,7 @@ const update = (req, res) => {
       message: "ID Bilgisi eksik",
     });
   }
-  modify(req.body, req.params?.id)
+  ProjectService.update(req.params?.id, req.body)
     .then((updatedProject) => {
       res.status(httpStatus.OK).send(updatedProject);
     })
@@ -46,7 +48,7 @@ const deleteProject = (req, res) => {
     });
   }
 
-  remove(req.params?.id)
+  ProjectService.delete(req.params?.id)
     .then((deletedProject) => {
       if(!deletedProject){
         return res.status(httpStatus.NOT_FOUND).send({error: "Böyle bir kayıt bulunmamaktadır."});
