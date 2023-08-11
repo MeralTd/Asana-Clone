@@ -7,6 +7,7 @@ const path = require("path")
 
 const { ProjectRoute, UserRoute, SectionRoute, TaskRoute } = require("./api-routes");
 const fileUpload = require("express-fileupload");
+const errorHandler = require("./middlewares/errorHandler");
 
 config();
 loaders();
@@ -25,4 +26,12 @@ app.listen(process.env.APP_PORT, () => {
     app.use("/sections", SectionRoute);
     app.use("/tasks", TaskRoute);
 
+    app.use((req, res, next) => {
+        console.log("çalıştı..");
+        const error =  new Error("Aradığınız sayfa bulunmamaktadır..");
+        error.status = 404,
+        next(error)
+    });
+
+    app.use(errorHandler);
 })
