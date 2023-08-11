@@ -1,7 +1,7 @@
 const BaseService = require("./BaseService");
-const BaseModel = require("../models/Projects");
+const BaseModel = require("../models/Sections");
 
-class Projects extends BaseService {
+class SectionService extends BaseService {
     constructor(){
         super(BaseModel)
     }
@@ -14,4 +14,4 @@ class Projects extends BaseService {
     }
 }
 
-module.exports = Projects;
+module.exports = new SectionService();

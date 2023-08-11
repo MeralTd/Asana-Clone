@@ -1,7 +1,7 @@
 const BaseModel = require("../models/Tasks");
 const BaseService = require("./BaseService");
 
-class Tasks extends BaseService {
+class TaskService extends BaseService {
   constructor() {
     super(BaseModel);
   }
@@ -36,4 +36,4 @@ class Tasks extends BaseService {
   }
 }
 
-module.exports = Tasks;
+module.exports = new TaskService();
